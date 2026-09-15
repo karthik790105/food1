@@ -1,0 +1,6 @@
+{
+  "name": "BiteMart Delivery",
+  "description": "BiteMart Delivery Partner App for delivery agents with order pickup, customer details, live navigation, and OTP verification.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

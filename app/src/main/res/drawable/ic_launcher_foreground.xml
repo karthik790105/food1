@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Center of canvas is (54,54). Safe zone is 21 to 87 -->
+
+    <!-- Shopping bag body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M35,46 L73,46 L69,79 C68.8,81.2 67,83 64.8,83 L43.2,83 C41,83 39.2,81.2 39,79 L35,46 Z" />
+
+    <!-- Shopping bag handles -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.2"
+        android:strokeLineCap="round"
+        android:pathData="M46,46 L46,39 C46,34.6 49.6,31 54,31 C58.4,31 62,34.6 62,39 L62,46" />
+
+    <!-- Cloche / Plate dome accent on the bag in Warm Amber/Gold -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M54,49 C46.5,49 41.5,54.5 41,61 L67,61 C66.5,54.5 61.5,49 54,49 Z" />
+
+    <!-- Cloche handle dot -->
+    <path
+        android:fillColor="#FFA000"
+        android:pathData="M54,46 A2.5,2.5 0 1,0 54,51 A2.5,2.5 0 1,0 54,46 Z" />
+
+    <!-- Cloche plate base -->
+    <path
+        android:fillColor="#FFB300"
+        android:pathData="M39,62 L69,62 C69.6,62 70,62.4 70,63 L70,64 C70,64.6 69.6,65 69,65 L39,65 C38.4,65 38,64.6 38,64 L38,63 C38,62.4 38.4,62 39,62 Z" />
+
+    <!-- Fresh leaf / grocery green sprout accent -->
+    <path
+        android:fillColor="#4CAF50"
+        android:pathData="M66,38 C66,38 73,34 74,41 C72,42 67,41 66,38 Z" />
+
+    <!-- Speed dash 1 -->
+    <path
+        android:fillColor="#FFE082"
+        android:pathData="M27,52 L31,52 C31.6,52 32,52.4 32,53 C32,53.6 31.6,54 31,54 L27,54 C26.4,54 26,53.6 26,53 C26,52.4 26.4,52 27,52 Z" />
+
+    <!-- Speed dash 2 -->
+    <path
+        android:fillColor="#FFE082"
+        android:pathData="M24,60 L32,60 C32.6,60 33,60.4 33,61 C33,61.6 32.6,62 32,62 L24,62 C23.4,62 23,61.6 23,61 C23,60.4 23.4,60 24,60 Z" />
+
+    <!-- Speed dash 3 -->
+    <path
+        android:fillColor="#FFE082"
+        android:pathData="M28,68 L33,68 C33.6,68 34,68.4 34,69 C34,69.6 33.6,70 33,70 L28,70 C27.4,70 27,69.6 27,69 C27,68.4 27.4,68 28,68 Z" />
+</vector>
