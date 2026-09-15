@@ -114,7 +114,7 @@ class DeliveryAuthManager(context: Context) {
 
         val partner = _registeredPartners.find {
             (it.phone.contains(cleanIdentifier) || it.email.lowercase() == cleanIdentifier) &&
-                    (it.password == cleanPassword || it.password.isBlank())
+                    it.password == cleanPassword
         }
 
         return if (partner != null) {
@@ -147,7 +147,7 @@ class DeliveryAuthManager(context: Context) {
             name = name.trim(),
             phone = phone.trim(),
             email = email.trim(),
-            password = if (password.isNotBlank()) password.trim() else "1234",
+            password = password.trim(),
             rating = 5.0,
             vehicle = vehicle.ifBlank { "Motorcycle / Bike" },
             vehicleNumber = vehicleNumber.trim().uppercase(),

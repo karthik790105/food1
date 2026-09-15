@@ -53,7 +53,7 @@ class BiteMartRepository(
 
     suspend fun verifyAndLogin(phone: String, enteredOtp: String, nameIfNew: String = ""): Boolean {
         val record = userDao.getOtpRecord(phone)
-        val isValid = (record != null && record.otpCode == enteredOtp.trim()) || enteredOtp.trim() == "1234"
+        val isValid = record != null && record.otpCode == enteredOtp.trim()
         if (isValid) {
             userDao.logoutAllUsers()
             val existing = userDao.getUserByPhone(phone)
@@ -257,10 +257,6 @@ class BiteMartRepository(
 
     suspend fun cancelOrder(orderId: String) {
         orderDao.cancelOrder(orderId)
-    }
-
-    suspend fun updateOrderStatus(orderId: String, status: String) {
-        orderDao.updateStatus(orderId, status)
     }
 
     fun isStoreOnline(storeId: String): Boolean = _storeOnlineStatus.value[storeId] ?: true

@@ -61,8 +61,6 @@ import com.example.viewmodel.CustomerDeliveryViewModel
 @Composable
 fun CustomerApp(
     viewModel: CustomerDeliveryViewModel,
-    onSwitchToRestaurantApp: () -> Unit = {},
-    onSwitchToDeliveryApp: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val activeUser by viewModel.activeUser.collectAsState()
@@ -278,8 +276,6 @@ fun CustomerApp(
     if (showNetworkSheet) {
         NetworkEcosystemSheet(
             onDismiss = { showNetworkSheet = false },
-            onOpenMerchantApp = onSwitchToRestaurantApp,
-            onOpenDeliveryApp = onSwitchToDeliveryApp,
             isCloudConnected = isCloudConnected,
             cloudStatus = cloudStatus
         )
@@ -296,7 +292,6 @@ fun CustomerApp(
             onSelectLocation = { title, fullAddress, landmark ->
                 viewModel.addNewAddress(title, fullAddress, landmark)
             },
-            onOpenRestaurantApp = onSwitchToRestaurantApp,
             onLogout = { viewModel.logout() },
             onDismiss = { showProfileSheet = false }
         )

@@ -137,7 +137,7 @@ class RestaurantAuthManager(context: Context) {
             return Result.failure(Exception("No registered restaurant found for '$identifier'. Please register your outlet."))
         }
 
-        if (pass.isNotBlank() && found.password.isNotBlank() && found.password != pass && pass != "1234") {
+        if (found.password.isNotBlank() && found.password != pass) {
             return Result.failure(Exception("Invalid password. Please check your credentials."))
         }
 
@@ -271,7 +271,7 @@ class RestaurantAuthManager(context: Context) {
             ownerName = ownerName.trim(),
             email = email.trim(),
             phone = phone.trim(),
-            password = password.ifBlank { "1234" },
+            password = password.trim(),
             restaurantId = newStoreId,
             restaurantName = restaurantName.trim(),
             businessType = businessType,

@@ -77,8 +77,6 @@ import com.example.viewmodel.DeliveryPartnerViewModel
 @Composable
 fun DeliveryAuthScreen(
     viewModel: DeliveryPartnerViewModel,
-    onSwitchToRestaurantApp: () -> Unit = {},
-    onSwitchToCustomerApp: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(0) } // 0 = Sign In, 1 = Register

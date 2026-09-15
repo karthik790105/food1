@@ -175,7 +175,7 @@ class DeliveryPartnerViewModel(application: Application) : AndroidViewModel(appl
         }
 
         // Validate OTP
-        if (cleanOtp != expectedOtp && cleanOtp != "1234") {
+        if (cleanOtp != expectedOtp) {
             return Pair(
                 false,
                 "Incorrect OTP. Ask customer ${order.customerName} for the 4-digit code shown on their tracking screen."

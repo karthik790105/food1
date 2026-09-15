@@ -22,6 +22,6 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "BiteMart Delivery"
+rootProject.name = "BiteMart Admin"
 
 include(":app")

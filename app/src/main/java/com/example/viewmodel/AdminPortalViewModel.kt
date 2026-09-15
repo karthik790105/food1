@@ -78,6 +78,7 @@ class AdminPortalViewModel(application: Application) : AndroidViewModel(applicat
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     val suspendedStores: StateFlow<Set<String>> = repository.suspendedStores
+    val storeOnlineStatus: StateFlow<Map<String, Boolean>> = repository.storeOnlineStatusFlow
     val suspendedRiders: StateFlow<Set<String>> = deliveryAuthManager.suspendedRiders
     val allDeliveryPartners: StateFlow<List<DeliveryPartner>> = deliveryAuthManager.allPartnersFlow
 
@@ -87,6 +88,14 @@ class AdminPortalViewModel(application: Application) : AndroidViewModel(applicat
     // Selected Store Menu Items
     private val _menuItemsForSelectedStore = MutableStateFlow<List<MenuItem>>(emptyList())
     val menuItemsForSelectedStore: StateFlow<List<MenuItem>> = _menuItemsForSelectedStore.asStateFlow()
+
+    // Printing Order State
+    private val _selectedOrderForPrint = MutableStateFlow<OrderEntity?>(null)
+    val selectedOrderForPrint: StateFlow<OrderEntity?> = _selectedOrderForPrint.asStateFlow()
+
+    fun selectOrderForPrint(order: OrderEntity?) {
+        _selectedOrderForPrint.value = order
+    }
 
     fun setNavTab(tab: AdminNavTab) {
         _currentNavTab.value = tab
@@ -156,6 +165,17 @@ class AdminPortalViewModel(application: Application) : AndroidViewModel(applicat
             "⚠️ $name has been SUSPENDED by Admin. Outlet cannot receive orders."
         } else {
             "✅ $name has been REACTIVATED and can now receive orders."
+        }
+    }
+
+    fun toggleStoreOnline(storeId: String) {
+        val store = repository.getStoreById(storeId)
+        val isNowOnline = repository.toggleStoreOnline(storeId)
+        val name = store?.name ?: "Restaurant"
+        _userMessage.value = if (isNowOnline) {
+            "🟢 $name is now ONLINE (accepting customer orders)."
+        } else {
+            "🔴 $name is now OFFLINE (outlet closed / paused)."
         }
     }
 

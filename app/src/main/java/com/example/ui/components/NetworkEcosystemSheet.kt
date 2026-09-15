@@ -51,8 +51,6 @@ import com.example.ui.theme.VegGreen
 @Composable
 fun NetworkEcosystemSheet(
     onDismiss: () -> Unit,
-    onOpenMerchantApp: () -> Unit = {},
-    onOpenDeliveryApp: () -> Unit = {},
     isCloudConnected: Boolean = false,
     cloudStatus: String = "Firebase Firestore Ready",
     modifier: Modifier = Modifier
@@ -167,17 +165,12 @@ fun NetworkEcosystemSheet(
             // 2. Restaurant & Shop App
             EcosystemRoleCard(
                 title = "2. Merchant / Store Partner App",
-                status = "READY TO LAUNCH",
+                status = "STANDALONE APP",
                 statusColor = Color(0xFF3B82F6),
                 icon = Icons.Default.Store,
                 iconColor = Color(0xFF3B82F6),
-                description = "Independent app used by store managers. Listens to shared Firestore 'orders' collection, accepts orders, marks them CONFIRMED/PREPARING, and manages catalog inventory.",
-                isCurrent = false,
-                actionLabel = "Open Restaurant App",
-                onActionClick = {
-                    onDismiss()
-                    onOpenMerchantApp()
-                }
+                description = "Independent app used by store managers. Listens to shared orders, accepts orders, marks them CONFIRMED/PREPARING, and manages catalog inventory.",
+                isCurrent = false
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -185,17 +178,12 @@ fun NetworkEcosystemSheet(
             // 3. Delivery Partner App
             EcosystemRoleCard(
                 title = "3. Delivery Rider App",
-                status = "READY TO LAUNCH",
+                status = "STANDALONE APP",
                 statusColor = GroceryGreenDark,
                 icon = Icons.Default.DeliveryDining,
                 iconColor = GroceryGreenDark,
-                description = "Independent app used by riders. Reads available orders from shared Firestore, claims deliveries, updates live partner details, and completes delivery via customer OTP.",
-                isCurrent = false,
-                actionLabel = "Open Delivery Rider App",
-                onActionClick = {
-                    onDismiss()
-                    onOpenDeliveryApp()
-                }
+                description = "Independent app used by riders. Reads available orders, claims deliveries, updates live partner details, and completes delivery via customer OTP.",
+                isCurrent = false
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -203,11 +191,11 @@ fun NetworkEcosystemSheet(
             // 4. Admin App
             EcosystemRoleCard(
                 title = "4. Central Admin Console App",
-                status = "SEPARATE APP",
+                status = "STANDALONE APP",
                 statusColor = Color(0xFF8B5CF6),
                 icon = Icons.Default.AdminPanelSettings,
                 iconColor = Color(0xFF8B5CF6),
-                description = "Independent administrative console app. Monitors city-wide orders, handles disputes, and oversees stores and riders connected to the shared Firebase database.",
+                description = "Independent administrative console app. Monitors city-wide orders, handles disputes, and oversees stores and riders.",
                 isCurrent = false
             )
 

@@ -1,6 +1,6 @@
 {
-  "name": "BiteMart Delivery",
-  "description": "BiteMart Delivery Partner App for delivery agents with order pickup, customer details, live navigation, and OTP verification.",
+  "name": "BiteMart Admin",
+  "description": "BiteMart Central Admin Portal to manage restaurants, riders, customers, menu items, live orders, delivery confirmation OTPs, and print receipts.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

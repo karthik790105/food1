@@ -126,7 +126,6 @@ fun UserProfileSheet(
     currentAddress: DeliveryAddress? = null,
     onOpenAddressPicker: () -> Unit = {},
     onSelectLocation: (title: String, fullAddress: String, landmark: String) -> Unit = { _, _, _ -> },
-    onOpenRestaurantApp: () -> Unit = {},
     onLogout: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -469,63 +468,6 @@ fun UserProfileSheet(
                         text = "Real-time updates active across customer & delivery fleet",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 14.dp))
-
-            // Restaurant Partner App Switcher Card
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = PrimaryOrange.copy(alpha = 0.08f)
-                ),
-                border = BorderStroke(1.dp, PrimaryOrange.copy(alpha = 0.35f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        onDismiss()
-                        onOpenRestaurantApp()
-                    }
-                    .testTag("btn_profile_open_restaurant_app")
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(14.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(PrimaryOrange),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Storefront,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Restaurant Partner Portal",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Manage kitchen orders, live KDS & menu catalog",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.Default.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = PrimaryOrange
                     )
                 }
             }

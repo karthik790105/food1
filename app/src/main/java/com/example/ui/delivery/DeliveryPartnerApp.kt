@@ -100,8 +100,6 @@ import com.example.viewmodel.DeliveryPartnerViewModel
 @Composable
 fun DeliveryPartnerApp(
     viewModel: DeliveryPartnerViewModel,
-    onSwitchToRestaurantApp: () -> Unit = {},
-    onSwitchToCustomerApp: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val currentPartner by viewModel.currentPartner.collectAsState()
@@ -126,8 +124,6 @@ fun DeliveryPartnerApp(
     if (currentPartner == null) {
         DeliveryAuthScreen(
             viewModel = viewModel,
-            onSwitchToRestaurantApp = onSwitchToRestaurantApp,
-            onSwitchToCustomerApp = onSwitchToCustomerApp,
             modifier = modifier
         )
         return

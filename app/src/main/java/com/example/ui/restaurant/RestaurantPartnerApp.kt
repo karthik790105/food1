@@ -77,8 +77,6 @@ import com.example.viewmodel.RestaurantPartnerViewModel
 @Composable
 fun RestaurantPartnerApp(
     viewModel: RestaurantPartnerViewModel,
-    onSwitchToCustomerApp: () -> Unit = {},
-    onSwitchToDeliveryApp: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val currentOwner by viewModel.currentOwner.collectAsState()
@@ -325,8 +323,6 @@ fun RestaurantPartnerApp(
             RestaurantNav.SETTINGS -> {
                 RestaurantSettingsScreen(
                     viewModel = viewModel,
-                    onSwitchToCustomerApp = onSwitchToCustomerApp,
-                    onSwitchToDeliveryApp = onSwitchToDeliveryApp,
                     modifier = Modifier.padding(innerPadding)
                 )
             }

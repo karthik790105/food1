@@ -199,8 +199,6 @@ private fun PartnerLoginForm(
     var isPasswordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    val demoAccounts = remember { viewModel.authManager.getDemoAccounts() }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -252,7 +250,7 @@ private fun PartnerLoginForm(
                         errorMessage = null
                     },
                     label = { Text("Password / PIN") },
-                    placeholder = { Text("Enter password (demo PIN: 1234)") },
+                    placeholder = { Text("Enter your password") },
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.Lock, contentDescription = null, tint = PrimaryOrange)
                     },
@@ -297,7 +295,11 @@ private fun PartnerLoginForm(
                             errorMessage = "Please enter email or phone number"
                             return@Button
                         }
-                        val err = viewModel.loginRestaurantOwner(identifier, password.ifBlank { "1234" })
+                        if (password.isBlank()) {
+                            errorMessage = "Please enter your password"
+                            return@Button
+                        }
+                        val err = viewModel.loginRestaurantOwner(identifier, password)
                         if (err != null) {
                             errorMessage = err
                         }
@@ -312,92 +314,6 @@ private fun PartnerLoginForm(
                     Icon(imageVector = Icons.Default.Storefront, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Sign In to Restaurant Portal", fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Quick Demo Outlets Section (for convenience and real-world simulation)
-        Text(
-            text = "Instant 1-Tap Partner Login",
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = "Select any registered outlet to immediately simulate their exclusive kitchen portal:",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        demoAccounts.forEach { owner ->
-            Card(
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                shape = RoundedCornerShape(12.dp),
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
-                    .clickable {
-                        identifier = owner.email
-                        password = "1234"
-                        val err = viewModel.loginRestaurantOwner(owner.email, "1234")
-                        if (err != null) {
-                            errorMessage = err
-                        }
-                    }
-            ) {
-                Row(
-                    modifier = Modifier.padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(
-                                if (owner.businessType == BusinessType.FOOD) PrimaryOrange.copy(alpha = 0.15f)
-                                else GroceryGreen.copy(alpha = 0.15f)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = if (owner.businessType == BusinessType.FOOD) Icons.Default.Restaurant else Icons.Default.Storefront,
-                            contentDescription = null,
-                            tint = if (owner.businessType == BusinessType.FOOD) PrimaryOrange else GroceryGreen,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = owner.restaurantName,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Owner: ${owner.ownerName} • ${owner.cuisine}",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-
-                    Surface(
-                        color = PrimaryOrange.copy(alpha = 0.12f),
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Text(
-                            text = "Login",
-                            color = PrimaryOrange,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 11.sp,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                        )
-                    }
                 }
             }
         }
@@ -546,7 +462,7 @@ private fun PartnerRegisterForm(
                         errorMessage = null
                     },
                     label = { Text("Portal Password / PIN *") },
-                    placeholder = { Text("Create password (e.g. 1234)") },
+                    placeholder = { Text("Create a secure password") },
                     leadingIcon = {
                         Icon(imageVector = Icons.Default.Key, contentDescription = null, tint = PrimaryOrange)
                     },
@@ -716,12 +632,16 @@ private fun PartnerRegisterForm(
                             errorMessage = "Please enter a valid email address"
                             return@Button
                         }
+                        if (password.isBlank() || password.length < 4) {
+                            errorMessage = "Please enter a password with at least 4 characters"
+                            return@Button
+                        }
 
                         val err = viewModel.registerRestaurantOwner(
                             ownerName = ownerName,
                             email = email,
                             phone = phone,
-                            password = password.ifBlank { "1234" },
+                            password = password,
                             restaurantName = restaurantName,
                             businessType = businessType,
                             cuisine = cuisine.ifBlank { if (businessType == BusinessType.FOOD) "Multi-Cuisine" else "Daily Essentials" },

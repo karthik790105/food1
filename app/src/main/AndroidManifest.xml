@@ -25,16 +25,70 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.MyApplication">
+
+        <!-- 1. Central Admin Portal App -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:label="@string/app_name"
+            android:label="@string/app_name_admin"
+            android:taskAffinity="com.bitemart.admin"
             android:theme="@style/Theme.MyApplication">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <activity
+            android:name=".AdminActivity"
+            android:exported="true"
+            android:label="@string/app_name_admin"
+            android:taskAffinity="com.bitemart.admin"
+            android:theme="@style/Theme.MyApplication">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+            </intent-filter>
+        </activity>
+
+        <!-- 2. Customer Food & Grocery App -->
+        <activity
+            android:name=".CustomerActivity"
+            android:exported="true"
+            android:label="@string/app_name_customer"
+            android:taskAffinity="com.bitemart.customer"
+            android:theme="@style/Theme.MyApplication">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 3. Restaurant Partner Kitchen Display App -->
+        <activity
+            android:name=".RestaurantActivity"
+            android:exported="true"
+            android:label="@string/app_name_restaurant"
+            android:taskAffinity="com.bitemart.restaurant"
+            android:theme="@style/Theme.MyApplication">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!-- 4. Delivery Partner Rider App -->
+        <activity
+            android:name=".DeliveryActivity"
+            android:exported="true"
+            android:label="@string/app_name_delivery"
+            android:taskAffinity="com.bitemart.delivery"
+            android:theme="@style/Theme.MyApplication">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
     </application>
 
 </manifest>

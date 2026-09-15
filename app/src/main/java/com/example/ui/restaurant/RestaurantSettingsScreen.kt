@@ -74,8 +74,6 @@ import com.example.viewmodel.RestaurantPartnerViewModel
 @Composable
 fun RestaurantSettingsScreen(
     viewModel: RestaurantPartnerViewModel,
-    onSwitchToCustomerApp: () -> Unit,
-    onSwitchToDeliveryApp: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val activeStore by viewModel.activeStore.collectAsState()
@@ -527,45 +525,6 @@ fun RestaurantSettingsScreen(
                             .testTag("btn_simulate_rush_hour")
                     ) {
                         Text("🔥 Rush (3x)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = PrimaryOrange)
-                    }
-                }
-            }
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Ecosystem App Role Switcher
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-            shape = RoundedCornerShape(14.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(14.dp)) {
-                Text(
-                    text = "BiteMart Ecosystem Switcher",
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = onSwitchToDeliveryApp,
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Delivery App", fontSize = 12.sp)
-                    }
-                    Button(
-                        onClick = onSwitchToCustomerApp,
-                        colors = ButtonDefaults.buttonColors(containerColor = VegGreen),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Customer App", fontSize = 12.sp)
                     }
                 }
             }
