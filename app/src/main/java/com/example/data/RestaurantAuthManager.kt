@@ -83,17 +83,12 @@ class RestaurantAuthManager(context: Context) {
 
     init {
         loadSession()
-        if (_currentOwner.value == null && _registeredOwners.isNotEmpty()) {
-            val defaultOwner = _registeredOwners.first()
-            saveSession(defaultOwner)
-            _currentOwner.value = defaultOwner
-        }
     }
 
     private fun loadSession() {
         val wasExplicitLogout = prefs.getBoolean("KEY_EXPLICIT_LOGOUT", false)
         val ownerId = prefs.getString("KEY_OWNER_ID", null)
-        if (ownerId != null) {
+        if (ownerId != null && !wasExplicitLogout) {
             val owner = _registeredOwners.find { it.id == ownerId } ?: RestaurantOwner(
                 id = ownerId,
                 ownerName = prefs.getString("KEY_OWNER_NAME", "Partner Owner") ?: "Partner Owner",
@@ -116,12 +111,9 @@ class RestaurantAuthManager(context: Context) {
                 _registeredOwners.add(owner)
             }
             _currentOwner.value = owner
-        } else if (!wasExplicitLogout) {
-            // First time launch: default to premier restaurant partner
-            _registeredOwners.firstOrNull()?.let { defaultOwner ->
-                _currentOwner.value = defaultOwner
-                saveSession(defaultOwner)
-            }
+        } else {
+            // Initially unauthenticated: User must register or login
+            _currentOwner.value = null
         }
     }
 

@@ -62,13 +62,10 @@ class RestaurantPartnerViewModel(application: Application) : AndroidViewModel(ap
     val authManager = RestaurantAuthManager(application)
     val currentOwner: StateFlow<RestaurantOwner?> = authManager.currentOwner
 
-    // All registered & built-in restaurants and outlets available for switching
-    val availableStores: List<Store>
-        get() = repository.getAllStores()
-
     // Active store strictly bound to the logged-in restaurant owner
     private val _activeStore = MutableStateFlow<Store>(
-        repository.getStoreById("store_biryani") ?: BiteMartRepository.allStores.first()
+        authManager.currentOwner.value?.let { repository.getStoreById(it.restaurantId) }
+            ?: (repository.getStoreById("store_biryani") ?: BiteMartRepository.allStores.first())
     )
     val activeStore: StateFlow<Store> = _activeStore.asStateFlow()
 
@@ -147,7 +144,6 @@ class RestaurantPartnerViewModel(application: Application) : AndroidViewModel(ap
         }
         // Initialize active store online status
         _isStoreOnline.value = repository.isStoreOnline(_activeStore.value.id)
-        seedSampleOrdersIfEmpty()
     }
 
     private fun applyOwnerStore(owner: RestaurantOwner) {
@@ -174,7 +170,6 @@ class RestaurantPartnerViewModel(application: Application) : AndroidViewModel(ap
         _isStoreOnline.value = repository.isStoreOnline(store.id)
         selectedMenuCategory.value = "All"
         menuSearchQuery.value = ""
-        seedSampleOrdersIfEmpty()
     }
 
     fun loginRestaurantOwner(identifier: String, pass: String): String? {
@@ -220,164 +215,6 @@ class RestaurantPartnerViewModel(application: Application) : AndroidViewModel(ap
 
     fun logoutRestaurantOwner() {
         authManager.logout()
-    }
-
-    fun seedSampleOrdersIfEmpty() {
-        viewModelScope.launch {
-            val store = _activeStore.value
-            val sampleOrders = listOf(
-                OrderEntity(
-                    orderId = "BM-${(1000..9999).random()}",
-                    storeId = store.id,
-                    storeName = store.name,
-                    storeType = store.type.name,
-                    itemsSummary = "Hyderabadi Chicken Dum Biryani (x2), Mirchi Ka Salan (x1), Garlic Naan (x2)",
-                    itemsCount = 5,
-                    subtotal = 820.0,
-                    deliveryFee = 40.0,
-                    taxes = 38.0,
-                    discount = 0.0,
-                    total = 898.0,
-                    status = OrderStatus.PLACED.name,
-                    timestamp = System.currentTimeMillis() - (3 * 60 * 1000),
-                    addressTitle = "Home",
-                    addressFull = "Flat 402, Green Palms, Indiranagar, Bangalore",
-                    partnerName = null,
-                    partnerPhone = null,
-                    partnerVehicle = null,
-                    partnerRating = null,
-                    otp = "4821",
-                    paymentMethod = "UPI"
-                ),
-                OrderEntity(
-                    orderId = "BM-${(1000..9999).random()}",
-                    storeId = store.id,
-                    storeName = store.name,
-                    storeType = store.type.name,
-                    itemsSummary = "Paneer Tikka Biryani (x1), Gulab Jamun (x2)",
-                    itemsCount = 3,
-                    subtotal = 430.0,
-                    deliveryFee = 25.0,
-                    taxes = 20.0,
-                    discount = 0.0,
-                    total = 475.0,
-                    status = OrderStatus.PREPARING.name,
-                    timestamp = System.currentTimeMillis() - (12 * 60 * 1000),
-                    addressTitle = "Work",
-                    addressFull = "Tower B, Prestige Acropolis, Koramangala, Bangalore",
-                    partnerName = "Vikas Gowda",
-                    partnerPhone = "+91 98450 12345",
-                    partnerVehicle = "Honda Activa 6G • KA 03 JB 8821",
-                    partnerRating = 4.9,
-                    otp = "7193",
-                    paymentMethod = "Cards"
-                ),
-                OrderEntity(
-                    orderId = "BM-${(1000..9999).random()}",
-                    storeId = store.id,
-                    storeName = store.name,
-                    storeType = store.type.name,
-                    itemsSummary = "Mutton Dum Biryani (x1), Chicken 65 (x1)",
-                    itemsCount = 2,
-                    subtotal = 680.0,
-                    deliveryFee = 35.0,
-                    taxes = 25.0,
-                    discount = 0.0,
-                    total = 740.0,
-                    status = OrderStatus.OUT_FOR_DELIVERY.name,
-                    timestamp = System.currentTimeMillis() - (25 * 60 * 1000),
-                    addressTitle = "Other",
-                    addressFull = "12th Main Road, HAL 2nd Stage, Bangalore",
-                    partnerName = "Suresh Kumar",
-                    partnerPhone = "+91 99001 22334",
-                    partnerVehicle = "Bajaj Pulsar 150 • KA 05 EH 1290",
-                    partnerRating = 4.8,
-                    otp = "3319",
-                    paymentMethod = "Cash on Delivery"
-                )
-            )
-            sampleOrders.forEach { order ->
-                repository.insertOrder(order)
-            }
-        }
-    }
-
-    fun simulateIncomingCustomerOrder(
-        customerName: String = listOf("Rahul Sharma", "Priya Nair", "Vikram Malhotra", "Sneha Patel", "Ananya Rao").random(),
-        customItems: List<String>? = null,
-        paymentMethod: String = listOf("UPI", "Credit Card", "Cash on Delivery").random()
-    ) {
-        viewModelScope.launch {
-            val store = _activeStore.value
-            val randomId = (1000..9999).random()
-            val menu = storeMenuItems.value
-
-            val itemsSummary = if (!customItems.isNullOrEmpty()) {
-                customItems.joinToString(", ")
-            } else if (menu.isNotEmpty()) {
-                val sampleItems = menu.shuffled().take((1..3).random().coerceAtMost(menu.size))
-                sampleItems.map { "${it.name} (x${(1..2).random()})" }.joinToString(", ")
-            } else {
-                listOf(
-                    "Special Chef Biryani (x2), Butter Roti (x4)",
-                    "Butter Chicken Special (x1), Jeera Rice (x1), Tandoori Roti (x2)",
-                    "Paneer Butter Masala (x1), Dal Makhani (x1), Garlic Naan (x3)"
-                ).random()
-            }
-
-            val subtotal = (220..580).random().toDouble()
-            val deliveryFee = 30.0
-            val taxes = ((subtotal * 0.05).toInt()).toDouble()
-            val total = subtotal + deliveryFee + taxes
-
-            val newOrder = OrderEntity(
-                orderId = "BM-$randomId",
-                storeId = store.id,
-                storeName = store.name,
-                storeType = store.type.name,
-                itemsSummary = "$customerName: $itemsSummary",
-                itemsCount = itemsSummary.split(",").size,
-                subtotal = subtotal,
-                deliveryFee = deliveryFee,
-                taxes = taxes,
-                discount = 0.0,
-                total = total,
-                status = OrderStatus.PLACED.name,
-                timestamp = System.currentTimeMillis(),
-                addressTitle = listOf("Home", "Office", "Apartment").random(),
-                addressFull = listOf(
-                    "80 Feet Road, 4th Block, Indiranagar, Bangalore",
-                    "100 Feet Road, HAL 2nd Stage, Indiranagar, Bangalore",
-                    "Prestige Tech Park, Marathahalli-Sarjapur Outer Ring Rd, Bangalore",
-                    "Koramangala 5th Block, near Jyoti Nivas College, Bangalore"
-                ).random(),
-                partnerName = null,
-                partnerPhone = null,
-                partnerVehicle = null,
-                partnerRating = null,
-                otp = "${(1000..9999).random()}",
-                paymentMethod = paymentMethod
-            )
-            repository.insertOrder(newOrder)
-            _selectedOrderTab.value = RestaurantOrderTab.NEW
-        }
-    }
-
-    fun simulateRushHourOrders() {
-        viewModelScope.launch {
-            repeat(3) {
-                simulateIncomingCustomerOrder()
-                kotlinx.coroutines.delay(200)
-            }
-        }
-    }
-
-    fun selectStore(store: Store) {
-        _activeStore.value = store
-        _isStoreOnline.value = repository.isStoreOnline(store.id)
-        selectedMenuCategory.value = "All"
-        menuSearchQuery.value = ""
-        seedSampleOrdersIfEmpty()
     }
 
     fun deleteDish(itemId: String) {

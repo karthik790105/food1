@@ -79,9 +79,7 @@ fun RestaurantSettingsScreen(
     val activeStore by viewModel.activeStore.collectAsState()
     val isOnline by viewModel.isStoreOnline.collectAsState()
     val currentOwner by viewModel.currentOwner.collectAsState()
-    val availableStores = viewModel.availableStores
 
-    var showStorePicker by remember { mutableStateOf(false) }
     var autoPrintKot by remember { mutableStateOf(true) }
     var busyModeBuffer by remember { mutableStateOf(false) }
     var soundAlerts by remember { mutableStateOf(true) }
@@ -265,13 +263,18 @@ fun RestaurantSettingsScreen(
                             )
                         }
 
-                        Button(
-                            onClick = { showStorePicker = true },
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange.copy(alpha = 0.15f)),
+                        Surface(
+                            color = PrimaryOrange.copy(alpha = 0.12f),
                             shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.testTag("btn_switch_outlet")
+                            border = BorderStroke(1.dp, PrimaryOrange.copy(alpha = 0.3f))
                         ) {
-                            Text("Switch", color = PrimaryOrange, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(
+                                text = "VERIFIED OUTLET",
+                                color = PrimaryOrange,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
                         }
                     }
 
@@ -460,183 +463,6 @@ fun RestaurantSettingsScreen(
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Simulate Customer Order Section
-        Card(
-            colors = CardDefaults.cardColors(containerColor = PrimaryOrange.copy(alpha = 0.08f)),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(1.dp, PrimaryOrange.copy(alpha = 0.3f)),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(36.dp)
-                            .clip(CircleShape)
-                            .background(PrimaryOrange.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Restaurant,
-                            contentDescription = null,
-                            tint = PrimaryOrange,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Column {
-                        Text(
-                            text = "Simulate Customer Orders",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Test live KDS kitchen tickets, prep alerts & dispatch",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Button(
-                        onClick = { viewModel.simulateIncomingCustomerOrder() },
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("btn_simulate_quick_order")
-                    ) {
-                        Text("⚡ 1-Tap Order", fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                    }
-
-                    OutlinedButton(
-                        onClick = { viewModel.simulateRushHourOrders() },
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier
-                            .weight(1f)
-                            .testTag("btn_simulate_rush_hour")
-                    ) {
-                        Text("🔥 Rush (3x)", fontWeight = FontWeight.Bold, fontSize = 13.sp, color = PrimaryOrange)
-                    }
-                }
-            }
-        }
-
         Spacer(modifier = Modifier.height(36.dp))
-    }
-
-    // Switch Outlet Dialog
-    if (showStorePicker) {
-        AlertDialog(
-            onDismissRequest = { showStorePicker = false },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.Storefront, contentDescription = null, tint = PrimaryOrange)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Switch Restaurant Outlet", fontWeight = FontWeight.Bold)
-                }
-            },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text(
-                        text = "Select which restaurant outlet you want to manage live in this portal:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    for (store in availableStores) {
-                        val isSelected = store.id == activeStore.id
-                        Surface(
-                            color = if (isSelected) PrimaryOrange.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(
-                                1.dp,
-                                if (isSelected) PrimaryOrange else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .clickable {
-                                    viewModel.selectStore(store)
-                                    showStorePicker = false
-                                }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(20.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isSelected) PrimaryOrange else Color.LightGray),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (isSelected) {
-                                        Icon(
-                                            imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = store.name,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                    )
-                                    Text(
-                                        text = "${store.location} • ${store.cuisines.take(2).joinToString(", ")}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                if (isSelected) {
-                                    Surface(
-                                        color = PrimaryOrange,
-                                        shape = RoundedCornerShape(6.dp)
-                                    ) {
-                                        Text(
-                                            text = "ACTIVE",
-                                            color = Color.White,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showStorePicker = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
-                ) {
-                    Text("Close")
-                }
-            }
-        )
     }
 }

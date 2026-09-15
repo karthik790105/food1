@@ -166,26 +166,24 @@ fun RestaurantLiveOrdersScreen(
                         }
 
                         Surface(
-                            color = PrimaryOrange,
+                            color = GroceryGreen.copy(alpha = 0.15f),
                             shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier
-                                .clickable { viewModel.simulateIncomingCustomerOrder() }
-                                .testTag("kds_btn_simulate_order")
+                            border = BorderStroke(1.dp, GroceryGreen.copy(alpha = 0.4f))
                         ) {
                             Row(
                                 modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.ReceiptLong,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(14.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .size(7.dp)
+                                        .clip(CircleShape)
+                                        .background(GroceryGreen)
                                 )
-                                Spacer(modifier = Modifier.width(4.dp))
+                                Spacer(modifier = Modifier.width(5.dp))
                                 Text(
-                                    text = "⚡ Simulate Order",
-                                    color = Color.White,
+                                    text = "Live KDS Active",
+                                    color = GroceryGreen,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 11.sp
                                 )
@@ -254,8 +252,7 @@ fun RestaurantLiveOrdersScreen(
         // Order list or empty state
         if (currentList.isEmpty()) {
             EmptyOrdersState(
-                tab = selectedTab,
-                onSimulateOrder = { viewModel.simulateIncomingCustomerOrder() }
+                tab = selectedTab
             )
         } else {
             LazyColumn(
@@ -713,8 +710,7 @@ fun RestaurantOrderCard(
 
 @Composable
 fun EmptyOrdersState(
-    tab: RestaurantOrderTab,
-    onSimulateOrder: () -> Unit = {}
+    tab: RestaurantOrderTab
 ) {
     Column(
         modifier = Modifier
@@ -756,32 +752,41 @@ fun EmptyOrdersState(
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = when (tab) {
-                RestaurantOrderTab.NEW -> "Incoming customer orders will chime here in real time."
+                RestaurantOrderTab.NEW -> "Incoming customer orders will appear here automatically in real time."
                 RestaurantOrderTab.PREPARING -> "Accepted orders will appear here for preparation."
                 RestaurantOrderTab.READY -> "Prepared dishes will wait here for delivery riders."
-                RestaurantOrderTab.COMPLETED -> "Past delivered and cancelled orders will be archived here."
+                RestaurantOrderTab.COMPLETED -> "Past delivered and completed orders are archived here."
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
-        Button(
-            onClick = onSimulateOrder,
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.testTag("btn_empty_simulate_order")
-        ) {
-            Icon(
-                imageVector = Icons.Default.ReceiptLong,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp)
-            )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Simulate Customer Order",
-                fontWeight = FontWeight.Bold
-            )
+        if (tab == RestaurantOrderTab.NEW) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Surface(
+                color = GroceryGreen.copy(alpha = 0.12f),
+                shape = RoundedCornerShape(20.dp),
+                border = BorderStroke(1.dp, GroceryGreen.copy(alpha = 0.3f))
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(GroceryGreen)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Listening for customer orders",
+                        color = GroceryGreen,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
         }
     }
 }

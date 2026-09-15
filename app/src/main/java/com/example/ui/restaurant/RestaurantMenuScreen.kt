@@ -102,7 +102,6 @@ fun RestaurantMenuScreen(
     val searchQuery by viewModel.menuSearchQuery.collectAsState()
     val selectedCategory by viewModel.selectedMenuCategory.collectAsState()
 
-    var showAddDishDialog by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<MenuItem?>(null) }
 
     val categories = remember(allItems) {
@@ -229,27 +228,6 @@ fun RestaurantMenuScreen(
                 }
             }
         }
-
-        // Floating Action Button to Add Dish
-        FloatingActionButton(
-            onClick = { showAddDishDialog = true },
-            containerColor = PrimaryOrange,
-            contentColor = Color.White,
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(20.dp)
-                .testTag("btn_add_dish")
-        ) {
-            Row(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(imageVector = Icons.Default.Add, contentDescription = null)
-                Spacer(modifier = Modifier.width(6.dp))
-                Text("Add Dish", fontWeight = FontWeight.Bold)
-            }
-        }
     }
 
     // Edit Price Dialog
@@ -295,18 +273,6 @@ fun RestaurantMenuScreen(
                 OutlinedButton(onClick = { editingItem = null }) {
                     Text("Cancel")
                 }
-            }
-        )
-    }
-
-    // Add Dish Dialog
-    if (showAddDishDialog) {
-        AddDishDialog(
-            categories = categories.filter { it != "All" },
-            onDismiss = { showAddDishDialog = false },
-            onAdd = { name, desc, price, isVeg, cat, unit ->
-                viewModel.addNewDish(name, desc, price, isVeg, cat, unit)
-                showAddDishDialog = false
             }
         )
     }
@@ -442,137 +408,4 @@ fun RestaurantMenuItemRow(
             }
         }
     }
-}
-
-@Composable
-fun AddDishDialog(
-    categories: List<String>,
-    onDismiss: () -> Unit,
-    onAdd: (name: String, desc: String, price: Double, isVeg: Boolean, category: String, unit: String) -> Unit
-) {
-    var dishName by remember { mutableStateOf("") }
-    var dishDesc by remember { mutableStateOf("") }
-    var priceText by remember { mutableStateOf("") }
-    var isVeg by remember { mutableStateOf(true) }
-    var selectedCat by remember { mutableStateOf(categories.firstOrNull() ?: "Main Course") }
-    var portionUnit by remember { mutableStateOf("Serves 1-2") }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Add New Dish to Menu") },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                OutlinedTextField(
-                    value = dishName,
-                    onValueChange = { dishName = it },
-                    label = { Text("Dish Name *") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth().testTag("input_new_dish_name")
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = dishDesc,
-                    onValueChange = { dishDesc = it },
-                    label = { Text("Description & Ingredients") },
-                    maxLines = 3,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = priceText,
-                    onValueChange = { priceText = it.filter { c -> c.isDigit() || c == '.' } },
-                    label = { Text("Price in ₹ *") },
-                    prefix = { Text("₹ ") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth().testTag("input_new_dish_price")
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-
-                OutlinedTextField(
-                    value = portionUnit,
-                    onValueChange = { portionUnit = it },
-                    label = { Text("Portion / Serving Size") },
-                    singleLine = true,
-                    shape = RoundedCornerShape(10.dp),
-                    modifier = Modifier.fillMaxWidth()
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Veg / Non-Veg Selector
-                Text("Food Type:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    FilterChip(
-                        selected = isVeg,
-                        onClick = { isVeg = true },
-                        label = { Text("Pure Veg") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = GroceryGreen.copy(alpha = 0.15f),
-                            selectedLabelColor = GroceryGreen
-                        )
-                    )
-                    FilterChip(
-                        selected = !isVeg,
-                        onClick = { isVeg = false },
-                        label = { Text("Non-Veg") },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color.Red.copy(alpha = 0.15f),
-                            selectedLabelColor = Color.Red
-                        )
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Category selector
-                Text("Category:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    categories.forEach { cat ->
-                        FilterChip(
-                            selected = selectedCat == cat,
-                            onClick = { selectedCat = cat },
-                            label = { Text(cat) }
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Button(
-                onClick = {
-                    val price = priceText.toDoubleOrNull() ?: 0.0
-                    if (dishName.isNotBlank() && price > 0) {
-                        onAdd(dishName, dishDesc, price, isVeg, selectedCat, portionUnit)
-                    }
-                },
-                enabled = dishName.isNotBlank() && (priceText.toDoubleOrNull() ?: 0.0) > 0,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                modifier = Modifier.testTag("btn_confirm_add_dish")
-            ) {
-                Text("Add to Menu")
-            }
-        },
-        dismissButton = {
-            OutlinedButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
 }

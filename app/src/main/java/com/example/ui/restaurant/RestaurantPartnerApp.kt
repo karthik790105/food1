@@ -93,12 +93,6 @@ fun RestaurantPartnerApp(
     val activeStore by viewModel.activeStore.collectAsState()
     val isStoreOnline by viewModel.isStoreOnline.collectAsState()
     val orders by viewModel.storeOrders.collectAsState()
-    val availableStores = viewModel.availableStores
-
-    var showOutletSwitchDialog by remember { mutableStateOf(false) }
-    var showSimulateOrderDialog by remember { mutableStateOf(false) }
-    var customCustomerName by remember { mutableStateOf("Rahul Sharma") }
-    var customPaymentMethod by remember { mutableStateOf("UPI") }
 
     val pendingOrdersCount = orders.count {
         it.status in listOf(OrderStatus.PLACED.name, OrderStatus.CONFIRMED.name, OrderStatus.PREPARING.name)
@@ -112,14 +106,12 @@ fun RestaurantPartnerApp(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
-                            .clickable { showOutletSwitchDialog = true }
-                            .padding(horizontal = 4.dp, vertical = 2.dp)
-                            .testTag("top_bar_switch_outlet")
+                            .padding(vertical = 2.dp)
+                            .testTag("top_bar_store_info")
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(30.dp)
+                                .size(32.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(PrimaryOrange),
                             contentAlignment = Alignment.Center
@@ -133,27 +125,20 @@ fun RestaurantPartnerApp(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = activeStore.name,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Icon(
-                                    imageVector = Icons.Default.ArrowDropDown,
-                                    contentDescription = "Switch outlet",
-                                    tint = PrimaryOrange,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
                             Text(
-                                text = "Tap to Switch Restaurant",
+                                text = activeStore.name,
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "${activeStore.cuisines.firstOrNull() ?: activeStore.type.name} • ${activeStore.location}",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = PrimaryOrange,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 10.sp,
-                                fontWeight = FontWeight.SemiBold
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -184,37 +169,6 @@ fun RestaurantPartnerApp(
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = if (isStoreOnline) GroceryGreen else Color.Red
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(6.dp))
-
-                    // Simulate Customer Order Trigger
-                    Surface(
-                        color = PrimaryOrange.copy(alpha = 0.15f),
-                        shape = RoundedCornerShape(14.dp),
-                        border = BorderStroke(1.dp, PrimaryOrange),
-                        modifier = Modifier
-                            .clickable { showSimulateOrderDialog = true }
-                            .testTag("top_btn_simulate_order")
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ReceiptLong,
-                                contentDescription = "Simulate Order",
-                                tint = PrimaryOrange,
-                                modifier = Modifier.size(15.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "+Order",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = PrimaryOrange
                             )
                         }
                     }
@@ -327,225 +281,5 @@ fun RestaurantPartnerApp(
                 )
             }
         }
-    }
-
-    // Switch Outlet Dialog accessible from TopBar across all tabs
-    if (showOutletSwitchDialog) {
-        AlertDialog(
-            onDismissRequest = { showOutletSwitchDialog = false },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.Storefront, contentDescription = null, tint = PrimaryOrange)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Switch Restaurant Outlet", fontWeight = FontWeight.Bold)
-                }
-            },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text(
-                        text = "Choose an outlet to manage live orders, menu, and KDS pipeline:",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    for (store in availableStores) {
-                        val isSelected = store.id == activeStore.id
-                        Surface(
-                            color = if (isSelected) PrimaryOrange.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
-                            shape = RoundedCornerShape(12.dp),
-                            border = BorderStroke(
-                                1.dp,
-                                if (isSelected) PrimaryOrange else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
-                            ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp)
-                                .clickable {
-                                    viewModel.selectStore(store)
-                                    showOutletSwitchDialog = false
-                                }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(12.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(22.dp)
-                                        .clip(CircleShape)
-                                        .background(if (isSelected) PrimaryOrange else Color.LightGray),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    if (isSelected) {
-                                        Icon(
-                                            imageVector = Icons.Default.CheckCircle,
-                                            contentDescription = null,
-                                            tint = Color.White,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.width(12.dp))
-
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = store.name,
-                                        style = MaterialTheme.typography.titleSmall,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
-                                    )
-                                    Text(
-                                        text = "${store.location} • ${store.cuisines.take(2).joinToString(", ")}",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-
-                                if (isSelected) {
-                                    Surface(
-                                        color = PrimaryOrange,
-                                        shape = RoundedCornerShape(6.dp)
-                                    ) {
-                                        Text(
-                                            text = "ACTIVE",
-                                            color = Color.White,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = { showOutletSwitchDialog = false },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
-                ) {
-                    Text("Close")
-                }
-            }
-        )
-    }
-
-    // Simulate Customer Order Dialog
-    if (showSimulateOrderDialog) {
-        AlertDialog(
-            onDismissRequest = { showSimulateOrderDialog = false },
-            title = {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(imageVector = Icons.Default.ReceiptLong, contentDescription = null, tint = PrimaryOrange)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Simulate Customer Order", fontWeight = FontWeight.Bold)
-                }
-            },
-            text = {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .verticalScroll(rememberScrollState())
-                ) {
-                    Text(
-                        text = "Simulate an incoming order from a customer to test your kitchen display tickets and prep workflow.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(14.dp))
-
-                    Text("Quick Simulation Presets:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Button(
-                            onClick = {
-                                viewModel.simulateIncomingCustomerOrder()
-                                showSimulateOrderDialog = false
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("⚡ 1-Tap Order", fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                        }
-
-                        OutlinedButton(
-                            onClick = {
-                                viewModel.simulateRushHourOrders()
-                                showSimulateOrderDialog = false
-                            },
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("🔥 Rush (3x)", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = PrimaryOrange)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text("Or Customize Customer Details:", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    OutlinedTextField(
-                        value = customCustomerName,
-                        onValueChange = { customCustomerName = it },
-                        label = { Text("Customer Name") },
-                        singleLine = true,
-                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = null, tint = PrimaryOrange) },
-                        shape = RoundedCornerShape(10.dp),
-                        modifier = Modifier.fillMaxWidth()
-                    )
-
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Text("Payment Method:", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        listOf("UPI", "Card", "Cash").forEach { method ->
-                            FilterChip(
-                                selected = customPaymentMethod == method,
-                                onClick = { customPaymentMethod = method },
-                                label = { Text(method, fontSize = 12.sp) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = PrimaryOrange.copy(alpha = 0.15f),
-                                    selectedLabelColor = PrimaryOrange
-                                )
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        val name = customCustomerName.ifBlank { "Customer" }
-                        viewModel.simulateIncomingCustomerOrder(
-                            customerName = name,
-                            paymentMethod = customPaymentMethod
-                        )
-                        showSimulateOrderDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
-                ) {
-                    Text("Simulate Order")
-                }
-            },
-            dismissButton = {
-                OutlinedButton(onClick = { showSimulateOrderDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 }
