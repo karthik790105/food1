@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
@@ -72,7 +74,44 @@ fun StoreDetailScreen(
 ) {
     val selectedStoreId by viewModel.selectedStoreId.collectAsState()
     val store = viewModel.repository.getStoreById(selectedStoreId ?: "")
-        ?: viewModel.repository.getStores().first()
+        ?: viewModel.repository.getStores().firstOrNull()
+
+    if (store == null) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Icon(
+                    imageVector = Icons.Default.ShoppingBag,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(64.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "Store Not Found",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "This store is currently unavailable or has not been listed yet.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(24.dp))
+                Button(
+                    onClick = { viewModel.navigateTo(AppScreen.EXPLORE) },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
+                ) {
+                    Text("Back to Explore", color = Color.White)
+                }
+            }
+        }
+    } else {
 
     val cartItems by viewModel.cartItems.collectAsState()
     val cartSummary by viewModel.cartSummary.collectAsState()
@@ -408,4 +447,5 @@ fun StoreDetailScreen(
             }
         }
     }
+}
 }

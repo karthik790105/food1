@@ -62,11 +62,54 @@ class RestaurantPartnerViewModel(application: Application) : AndroidViewModel(ap
     val authManager = RestaurantAuthManager(application)
     val currentOwner: StateFlow<RestaurantOwner?> = authManager.currentOwner
 
+    // All registered & built-in restaurants and outlets available for switching
+    val availableStores: List<Store>
+        get() = repository.getAllStores()
+
+    private fun resolveInitialStore(): Store {
+        val owner = authManager.currentOwner.value
+        if (owner != null) {
+            val existing = repository.getStoreById(owner.restaurantId)
+            if (existing != null) return existing
+            val newStore = Store(
+                id = owner.restaurantId,
+                name = owner.restaurantName,
+                type = owner.businessType,
+                tagline = if (owner.businessType == BusinessType.FOOD) "Freshly prepared by ${owner.restaurantName}" else "Fast daily essentials from ${owner.restaurantName}",
+                rating = 4.8,
+                ratingCount = 1,
+                deliveryTimeMin = 20,
+                distanceKm = 1.2,
+                deliveryFee = 25.0,
+                imageUrl = if (owner.businessType == BusinessType.FOOD) {
+                    "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=700&auto=format&fit=crop&q=80"
+                } else {
+                    "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=700&auto=format&fit=crop&q=80"
+                },
+                cuisines = owner.cuisine.split(",").map { it.trim() }.filter { it.isNotBlank() },
+                location = owner.location
+            )
+            repository.registerNewStore(newStore)
+            return newStore
+        }
+        return repository.getAllStores().firstOrNull() ?: Store(
+            id = "store_default",
+            name = "My Restaurant",
+            type = BusinessType.FOOD,
+            tagline = "Freshly prepared authentic dishes",
+            rating = 4.8,
+            ratingCount = 1,
+            deliveryTimeMin = 25,
+            distanceKm = 1.5,
+            deliveryFee = 25.0,
+            imageUrl = "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=700&auto=format&fit=crop&q=80",
+            cuisines = listOf("North Indian", "Biryani"),
+            location = "Indiranagar, Bengaluru"
+        )
+    }
+
     // Active store strictly bound to the logged-in restaurant owner
-    private val _activeStore = MutableStateFlow<Store>(
-        authManager.currentOwner.value?.let { repository.getStoreById(it.restaurantId) }
-            ?: (repository.getStoreById("store_biryani") ?: BiteMartRepository.allStores.first())
-    )
+    private val _activeStore = MutableStateFlow<Store>(resolveInitialStore())
     val activeStore: StateFlow<Store> = _activeStore.asStateFlow()
 
     // Navigation & Tab state
@@ -217,6 +260,13 @@ class RestaurantPartnerViewModel(application: Application) : AndroidViewModel(ap
         authManager.logout()
     }
 
+    fun selectStore(store: Store) {
+        _activeStore.value = store
+        _isStoreOnline.value = repository.isStoreOnline(store.id)
+        selectedMenuCategory.value = "All"
+        menuSearchQuery.value = ""
+    }
+
     fun deleteDish(itemId: String) {
         repository.deleteMenuItem(itemId)
     }
@@ -239,12 +289,9 @@ class RestaurantPartnerViewModel(application: Application) : AndroidViewModel(ap
         viewModelScope.launch {
             repository.updateRestaurantOrderStatus(
                 orderId = orderId,
-                status = OrderStatus.PREPARING.name,
-                partnerName = "Vikas Gowda (Rider Assigned)",
-                partnerPhone = "+91 98450 12345",
-                partnerVehicle = "Honda Activa 6G • KA 03 JB 8821"
+                status = OrderStatus.PREPARING.name
             )
-            // Auto switch to PREPARING tab to view kitchen cooking
+            // Switch to PREPARING tab to monitor kitchen cooking
             _selectedOrderTab.value = RestaurantOrderTab.PREPARING
         }
     }
@@ -262,10 +309,7 @@ class RestaurantPartnerViewModel(application: Application) : AndroidViewModel(ap
         viewModelScope.launch {
             repository.updateRestaurantOrderStatus(
                 orderId = orderId,
-                status = OrderStatus.OUT_FOR_DELIVERY.name,
-                partnerName = "Vikas Gowda (At Restaurant Doorstep)",
-                partnerPhone = "+91 98450 12345",
-                partnerVehicle = "Honda Activa 6G • KA 03 JB 8821"
+                status = OrderStatus.READY_FOR_PICKUP.name
             )
             _selectedOrderTab.value = RestaurantOrderTab.READY
         }
@@ -275,7 +319,7 @@ class RestaurantPartnerViewModel(application: Application) : AndroidViewModel(ap
         viewModelScope.launch {
             repository.updateRestaurantOrderStatus(
                 orderId = orderId,
-                status = OrderStatus.DELIVERED.name
+                status = OrderStatus.OUT_FOR_DELIVERY.name
             )
             _selectedOrderTab.value = RestaurantOrderTab.COMPLETED
         }

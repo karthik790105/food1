@@ -14,10 +14,11 @@ import com.example.model.BusinessType
 import com.example.model.CategoryFilter
 import com.example.model.Coupon
 import com.example.model.DeliveryAddress
-import com.example.model.DeliveryPartner
 import com.example.model.MenuItem
 import com.example.model.OrderStatus
 import com.example.model.Store
+import com.example.util.CurrentLocationInfo
+import com.example.util.LocationService
 import com.example.util.SmsNotificationHelper
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.Job
@@ -83,9 +84,35 @@ class CustomerDeliveryViewModel(application: Application) : AndroidViewModel(app
 
     private var activeOrderFirestoreListener: ListenerRegistration? = null
 
+    // Real-Time Google Location Services
+    val locationService = LocationService(application)
+
+    private val _isLocationLoading = MutableStateFlow(false)
+    val isLocationLoading: StateFlow<Boolean> = _isLocationLoading.asStateFlow()
+
+    private val _currentLocationInfo = MutableStateFlow<CurrentLocationInfo?>(null)
+    val currentLocationInfo: StateFlow<CurrentLocationInfo?> = _currentLocationInfo.asStateFlow()
+
+    private val _userLatitude = MutableStateFlow(12.9716)
+    val userLatitude: StateFlow<Double> = _userLatitude.asStateFlow()
+
+    private val _userLongitude = MutableStateFlow(77.5946)
+    val userLongitude: StateFlow<Double> = _userLongitude.asStateFlow()
+
+    private val _locationPermissionGranted = MutableStateFlow(locationService.hasLocationPermission())
+    val locationPermissionGranted: StateFlow<Boolean> = _locationPermissionGranted.asStateFlow()
+
+    private val _locationErrorMessage = MutableStateFlow<String?>(null)
+    val locationErrorMessage: StateFlow<String?> = _locationErrorMessage.asStateFlow()
+
     init {
         // Seed stores catalogue to Cloud Firestore if connected
         firebaseDb.seedStoresIfConnected(BiteMartRepository.allStores, viewModelScope)
+
+        // Attempt real-time GPS coordinates fetch if permission is already granted
+        if (locationService.hasLocationPermission()) {
+            fetchCurrentGpsLocation()
+        }
     }
 
     // User Authentication States
@@ -362,7 +389,12 @@ class CustomerDeliveryViewModel(application: Application) : AndroidViewModel(app
             val subtotal = items.sumOf { it.price * it.quantity }
             val first = items.first()
             val store = repository.getStoreById(first.storeId)
-            val deliveryFee = store?.deliveryFee ?: 35.0
+            val deliveryFee = if (store != null) {
+                val dist = LocationService.calculateDistanceKm(_userLatitude.value, _userLongitude.value, store.latitude, store.longitude)
+                LocationService.calculateDeliveryFee(dist)
+            } else {
+                35.0
+            }
             val taxes = subtotal * 0.05
             val platformFee = 5.0
             val discount = 0.0
@@ -388,9 +420,6 @@ class CustomerDeliveryViewModel(application: Application) : AndroidViewModel(app
         started = SharingStarted.WhileSubscribed(5000),
         initialValue = CartSummary()
     )
-
-    // Live Tracking Simulation Coroutine
-    private var trackingJob: Job? = null
 
     // Navigation functions
     fun navigateTo(screen: AppScreen) {
@@ -470,6 +499,70 @@ class CustomerDeliveryViewModel(application: Application) : AndroidViewModel(app
         _selectedAddressId.value = newAddr.id
     }
 
+    fun fetchCurrentGpsLocation(onComplete: (() -> Unit)? = null) {
+        _isLocationLoading.value = true
+        _locationErrorMessage.value = null
+        locationService.fetchCurrentLocation(
+            onSuccess = { info ->
+                _isLocationLoading.value = false
+                _locationPermissionGranted.value = true
+                _currentLocationInfo.value = info
+                _userLatitude.value = info.latitude
+                _userLongitude.value = info.longitude
+
+                val phone = activeUser.value?.phone ?: "+91 98765 43210"
+                val gpsAddress = DeliveryAddress(
+                    id = "addr_gps",
+                    title = info.title.ifBlank { "Current Location" },
+                    fullAddress = info.fullAddress,
+                    landmark = "GPS Pin • ${info.area}, ${info.city}",
+                    phone = phone,
+                    isDefault = true
+                )
+
+                val currentAddrs = _userAddresses.value.toMutableList()
+                val existingGpsIdx = currentAddrs.indexOfFirst { it.id == "addr_gps" }
+                if (existingGpsIdx >= 0) {
+                    currentAddrs[existingGpsIdx] = gpsAddress
+                } else {
+                    currentAddrs.add(0, gpsAddress)
+                }
+                _userAddresses.value = currentAddrs
+                _selectedAddressId.value = gpsAddress.id
+                onComplete?.invoke()
+            },
+            onError = { err ->
+                _isLocationLoading.value = false
+                _locationErrorMessage.value = err
+                onComplete?.invoke()
+            }
+        )
+    }
+
+    fun onLocationPermissionDenied() {
+        _locationPermissionGranted.value = false
+        _locationErrorMessage.value = "Location permission denied. You can still set delivery address manually."
+    }
+
+    fun getDynamicStoreDistance(store: Store): Double {
+        return LocationService.calculateDistanceKm(
+            fromLat = _userLatitude.value,
+            fromLng = _userLongitude.value,
+            toLat = store.latitude,
+            toLng = store.longitude
+        )
+    }
+
+    fun getDynamicDeliveryTimeMin(store: Store): Int {
+        val dist = getDynamicStoreDistance(store)
+        return LocationService.calculateDeliveryTimeMin(dist)
+    }
+
+    fun getDynamicDeliveryFee(store: Store): Double {
+        val dist = getDynamicStoreDistance(store)
+        return LocationService.calculateDeliveryFee(dist)
+    }
+
     fun deleteAddress(addressId: String) {
         val updated = _userAddresses.value.filter { it.id != addressId }
         _userAddresses.value = updated
@@ -509,7 +602,7 @@ class CustomerDeliveryViewModel(application: Application) : AndroidViewModel(app
         }
     }
 
-    // Order Placement & Real-time Live Dispatch Lifecycle Simulation
+    // Order Placement (Real-World Commercial Pipeline: State driven strictly by Restaurant & Delivery partner apps)
     fun placeOrder() {
         val summary = cartSummary.value
         if (summary.items.isEmpty()) return
@@ -570,48 +663,11 @@ class CustomerDeliveryViewModel(application: Application) : AndroidViewModel(app
                     }
                 }
             }
-
-            // Start simulated real-time dispatch cycle
-            startOrderLifecycleSimulation(orderId)
-        }
-    }
-
-    private fun startOrderLifecycleSimulation(orderId: String) {
-        trackingJob?.cancel()
-        trackingJob = viewModelScope.launch {
-            // Stage 1: Sent to store, waiting confirmation (3 seconds)
-            delay(3500)
-            repository.updateOrderStatus(orderId, OrderStatus.CONFIRMED.name)
-
-            // Stage 2: Kitchen preparing / Grocery packing (7 seconds)
-            delay(6000)
-            repository.updateOrderStatus(orderId, OrderStatus.PREPARING.name)
-
-            // Stage 3: Delivery partner assigned (8 seconds)
-            delay(7000)
-            val partners = listOf(
-                DeliveryPartner("Ramesh Varma", "+91 98450 12345", 4.9, "Hero Splendor Pro", "KA-04-ET-8921", 1450),
-                DeliveryPartner("Arun Kumar", "+91 97321 65432", 4.8, "TVS Jupiter 125", "KA-01-MQ-3312", 980),
-                DeliveryPartner("Sunil Gowda", "+91 99123 88412", 4.9, "Ather 450X EV", "KA-03-JJ-4920", 2100)
-            )
-            val assigned = partners.random()
-            repository.assignPartnerToOrder(
-                orderId = orderId,
-                status = OrderStatus.OUT_FOR_DELIVERY.name,
-                partnerName = assigned.name,
-                partnerPhone = assigned.phone,
-                partnerVehicle = "${assigned.vehicle} (${assigned.vehicleNumber})",
-                partnerRating = assigned.rating
-            )
-
-            // Stage 4: Arrived and Delivered (12 seconds)
-            delay(12000)
-            repository.updateOrderStatus(orderId, OrderStatus.DELIVERED.name)
         }
     }
 
     fun reorder(order: OrderEntity) {
-        val store = repository.getStoreById(order.storeId) ?: BiteMartRepository.allStores.first()
+        val store = repository.getStoreById(order.storeId) ?: repository.getAllStores().firstOrNull() ?: return
         val items = repository.getMenuItemsForStore(store.id)
         viewModelScope.launch {
             repository.clearCart()

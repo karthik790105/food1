@@ -9,7 +9,9 @@ enum class OrderStatus(val displayName: String, val description: String) {
     PLACED("Order Placed", "Your order has been sent to the store"),
     CONFIRMED("Confirmed", "Store has accepted your order"),
     PREPARING("Preparing", "Items are being freshly prepared & packed"),
-    OUT_FOR_DELIVERY("Out for Delivery", "Rider is heading to your doorstep"),
+    READY_FOR_PICKUP("Ready for Pickup", "Order is packed & ready for rider pickup"),
+    OUT_FOR_PICKUP("Rider En Route to Store", "Delivery partner assigned and heading to pickup"),
+    OUT_FOR_DELIVERY("Out for Delivery", "Rider picked up and heading to your doorstep"),
     DELIVERED("Delivered", "Delivered successfully! Enjoy your meal"),
     CANCELLED("Cancelled", "Order was cancelled")
 }
@@ -30,7 +32,9 @@ data class Store(
     val isPromoted: Boolean = false,
     val discountText: String? = null,
     val isVegOnly: Boolean = false,
-    val location: String = "Indiranagar, Bangalore"
+    val location: String = "Indiranagar, Bangalore",
+    val latitude: Double = 12.9716,
+    val longitude: Double = 77.5946
 )
 
 data class MenuItem(

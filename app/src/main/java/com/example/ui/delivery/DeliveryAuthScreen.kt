@@ -503,7 +503,7 @@ fun DeliveryAuthScreen(
                             FilterChip(
                                 selected = regVehicleType == vType,
                                 onClick = { regVehicleType = vType },
-                                label = { Text(vType.split(" ").first()) },
+                                label = { Text(vType.split(" ").firstOrNull() ?: vType) },
                                 colors = FilterChipDefaults.filterChipColors(
                                     selectedContainerColor = PrimaryOrange.copy(alpha = 0.2f),
                                     selectedLabelColor = PrimaryOrange

@@ -64,10 +64,10 @@ interface OrderDao {
         partnerRating: Double
     )
 
-    @Query("SELECT * FROM orders WHERE status IN ('CONFIRMED', 'PREPARING', 'PLACED') ORDER BY timestamp DESC")
+    @Query("SELECT * FROM orders WHERE status IN ('READY_FOR_PICKUP', 'PREPARING', 'CONFIRMED', 'PLACED') ORDER BY timestamp DESC")
     fun getAvailableOrdersForDelivery(): Flow<List<OrderEntity>>
 
-    @Query("SELECT * FROM orders WHERE partnerName = :partnerName AND status = 'OUT_FOR_DELIVERY' ORDER BY timestamp DESC")
+    @Query("SELECT * FROM orders WHERE partnerName = :partnerName AND status IN ('OUT_FOR_PICKUP', 'OUT_FOR_DELIVERY') ORDER BY timestamp DESC")
     fun getActiveDeliveriesForPartner(partnerName: String): Flow<List<OrderEntity>>
 
     @Query("SELECT * FROM orders WHERE partnerName = :partnerName AND status = 'DELIVERED' ORDER BY timestamp DESC")

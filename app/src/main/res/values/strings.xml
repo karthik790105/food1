@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">BiteMart Admin</string>
-    <string name="app_name_admin">BiteMart Admin</string>
-    <string name="app_name_customer">BiteMart</string>
-    <string name="app_name_restaurant">BiteMart Restaurant</string>
-    <string name="app_name_delivery">BiteMart Delivery</string>
+    <string name="app_name">BiteMart Delivery</string>
+    <string name="admin_app_name">BiteMart Admin</string>
+    <string name="delivery_app_name">BiteMart Delivery</string>
+    <string name="restaurant_app_name">BiteMart Restaurant</string>
+    <string name="customer_app_name">BiteMart Customer</string>
 </resources>

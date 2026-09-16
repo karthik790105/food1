@@ -93,6 +93,9 @@ fun RestaurantPartnerApp(
     val activeStore by viewModel.activeStore.collectAsState()
     val isStoreOnline by viewModel.isStoreOnline.collectAsState()
     val orders by viewModel.storeOrders.collectAsState()
+    val availableStores = viewModel.availableStores
+
+    var showOutletSwitchDialog by remember { mutableStateOf(false) }
 
     val pendingOrdersCount = orders.count {
         it.status in listOf(OrderStatus.PLACED.name, OrderStatus.CONFIRMED.name, OrderStatus.PREPARING.name)
@@ -106,12 +109,14 @@ fun RestaurantPartnerApp(
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
-                            .padding(vertical = 2.dp)
-                            .testTag("top_bar_store_info")
+                            .clip(RoundedCornerShape(10.dp))
+                            .clickable { showOutletSwitchDialog = true }
+                            .padding(horizontal = 4.dp, vertical = 2.dp)
+                            .testTag("top_bar_switch_outlet")
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(30.dp)
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(PrimaryOrange),
                             contentAlignment = Alignment.Center
@@ -125,20 +130,27 @@ fun RestaurantPartnerApp(
                         }
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = activeStore.name,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ArrowDropDown,
+                                    contentDescription = "Switch outlet",
+                                    tint = PrimaryOrange,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                             Text(
-                                text = activeStore.name,
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "${activeStore.cuisines.firstOrNull() ?: activeStore.type.name} • ${activeStore.location}",
+                                text = "Tap to Switch Restaurant",
                                 style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                color = PrimaryOrange,
                                 fontSize = 10.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                fontWeight = FontWeight.SemiBold
                             )
                         }
                     }
@@ -281,5 +293,112 @@ fun RestaurantPartnerApp(
                 )
             }
         }
+    }
+
+    // Switch Outlet Dialog accessible from TopBar across all tabs
+    if (showOutletSwitchDialog) {
+        AlertDialog(
+            onDismissRequest = { showOutletSwitchDialog = false },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Default.Storefront, contentDescription = null, tint = PrimaryOrange)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Switch Restaurant Outlet", fontWeight = FontWeight.Bold)
+                }
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    Text(
+                        text = "Choose an outlet to manage live orders, menu, and KDS pipeline:",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    for (store in availableStores) {
+                        val isSelected = store.id == activeStore.id
+                        Surface(
+                            color = if (isSelected) PrimaryOrange.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface,
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(
+                                1.dp,
+                                if (isSelected) PrimaryOrange else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp)
+                                .clickable {
+                                    viewModel.selectStore(store)
+                                    showOutletSwitchDialog = false
+                                }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .clip(CircleShape)
+                                        .background(if (isSelected) PrimaryOrange else Color.LightGray),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    if (isSelected) {
+                                        Icon(
+                                            imageVector = Icons.Default.CheckCircle,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(16.dp)
+                                        )
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.width(12.dp))
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = store.name,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                    )
+                                    Text(
+                                        text = "${store.location} • ${store.cuisines.take(2).joinToString(", ")}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+
+                                if (isSelected) {
+                                    Surface(
+                                        color = PrimaryOrange,
+                                        shape = RoundedCornerShape(6.dp)
+                                    ) {
+                                        Text(
+                                            text = "ACTIVE",
+                                            color = Color.White,
+                                            fontSize = 9.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showOutletSwitchDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
+                ) {
+                    Text("Close")
+                }
+            }
+        )
     }
 }

@@ -94,7 +94,7 @@ fun RestaurantLiveOrdersScreen(
 
     val newOrders = orders.filter { it.status == OrderStatus.PLACED.name }
     val preparingOrders = orders.filter { it.status in listOf(OrderStatus.CONFIRMED.name, OrderStatus.PREPARING.name) }
-    val readyOrders = orders.filter { it.status == OrderStatus.OUT_FOR_DELIVERY.name }
+    val readyOrders = orders.filter { it.status in listOf(OrderStatus.READY_FOR_PICKUP.name, OrderStatus.OUT_FOR_PICKUP.name, OrderStatus.OUT_FOR_DELIVERY.name) }
     val completedOrders = orders.filter { it.status in listOf(OrderStatus.DELIVERED.name, OrderStatus.CANCELLED.name) }
 
     val currentList = when (selectedTab) {
@@ -162,31 +162,6 @@ fun RestaurantLiveOrdersScreen(
                                         fontSize = 11.sp
                                     )
                                 }
-                            }
-                        }
-
-                        Surface(
-                            color = GroceryGreen.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(16.dp),
-                            border = BorderStroke(1.dp, GroceryGreen.copy(alpha = 0.4f))
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(7.dp)
-                                        .clip(CircleShape)
-                                        .background(GroceryGreen)
-                                )
-                                Spacer(modifier = Modifier.width(5.dp))
-                                Text(
-                                    text = "Live KDS Active",
-                                    color = GroceryGreen,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp
-                                )
                             }
                         }
                     }
@@ -752,41 +727,13 @@ fun EmptyOrdersState(
         Spacer(modifier = Modifier.height(6.dp))
         Text(
             text = when (tab) {
-                RestaurantOrderTab.NEW -> "Incoming customer orders will appear here automatically in real time."
+                RestaurantOrderTab.NEW -> "Incoming customer orders will chime here in real time."
                 RestaurantOrderTab.PREPARING -> "Accepted orders will appear here for preparation."
                 RestaurantOrderTab.READY -> "Prepared dishes will wait here for delivery riders."
-                RestaurantOrderTab.COMPLETED -> "Past delivered and completed orders are archived here."
+                RestaurantOrderTab.COMPLETED -> "Past delivered and cancelled orders will be archived here."
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-
-        if (tab == RestaurantOrderTab.NEW) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Surface(
-                color = GroceryGreen.copy(alpha = 0.12f),
-                shape = RoundedCornerShape(20.dp),
-                border = BorderStroke(1.dp, GroceryGreen.copy(alpha = 0.3f))
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(GroceryGreen)
-                    )
-                    Spacer(modifier = Modifier.width(6.dp))
-                    Text(
-                        text = "Listening for customer orders",
-                        color = GroceryGreen,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-        }
     }
 }

@@ -80,7 +80,6 @@ fun TopLocationHeader(
     userName: String = "Customer",
     onAddressClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onNetworkClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Surface(

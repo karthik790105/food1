@@ -1,6 +1,6 @@
 {
-  "name": "BiteMart Admin",
-  "description": "BiteMart Central Admin Portal to manage restaurants, riders, customers, menu items, live orders, delivery confirmation OTPs, and print receipts.",
+  "name": "BiteMart Delivery",
+  "description": "BiteMart Ecosystem with Central Admin Operations Portal (Delivery OTP cross-check, restaurant & rider suspension, live menu pricing), Delivery Partner App, Restaurant Partner App, and Customer App.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

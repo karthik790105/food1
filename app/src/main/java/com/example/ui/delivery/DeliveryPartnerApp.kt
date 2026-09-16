@@ -339,9 +339,6 @@ fun DeliveryPartnerApp(
                         },
                         onPrintBill = { order ->
                             orderForPrintBill = order
-                        },
-                        onSimulateOrder = {
-                            viewModel.simulateIncomingReadyOrder()
                         }
                     )
                 }
@@ -357,9 +354,6 @@ fun DeliveryPartnerApp(
                         },
                         onSwitchToRequests = {
                             viewModel.setNav(DeliveryNav.REQUESTS)
-                        },
-                        onSimulateOrder = {
-                            viewModel.simulateIncomingReadyOrder()
                         }
                     )
                 }
@@ -416,8 +410,7 @@ private fun DeliveryRequestsScreen(
     availableOrders: List<OrderEntity>,
     isOnline: Boolean,
     onAcceptAndPickup: (OrderEntity) -> Unit,
-    onPrintBill: (OrderEntity) -> Unit,
-    onSimulateOrder: () -> Unit
+    onPrintBill: (OrderEntity) -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -441,22 +434,6 @@ private fun DeliveryRequestsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            }
-
-            // Simulate Ready Order Button for quick testing
-            Button(
-                onClick = onSimulateOrder,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                shape = RoundedCornerShape(10.dp),
-                modifier = Modifier.testTag("simulate_ready_order_button")
-            ) {
-                Icon(
-                    imageVector = Icons.Default.FlashOn,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp)
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Text("Test Order", fontSize = 13.sp, fontWeight = FontWeight.Bold)
             }
         }
 
@@ -492,21 +469,11 @@ private fun DeliveryRequestsScreen(
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
-                        text = "Tap 'Test Order' above to simulate a ready customer order for immediate pickup.",
+                        text = "Orders marked 'Ready for Pickup' by restaurants will appear here automatically in real time.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = onSimulateOrder,
-                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(imageVector = Icons.Default.FlashOn, contentDescription = null)
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text("Simulate Ready Order Now")
-                    }
                 }
             }
         } else {
@@ -705,8 +672,7 @@ private fun ActiveDeliveryTripScreen(
     activeDeliveries: List<OrderEntity>,
     onOpenOtpSheet: (OrderEntity) -> Unit,
     onPrintBill: (OrderEntity) -> Unit,
-    onSwitchToRequests: () -> Unit,
-    onSimulateOrder: () -> Unit
+    onSwitchToRequests: () -> Unit
 ) {
     if (activeDeliveries.isEmpty()) {
         Box(

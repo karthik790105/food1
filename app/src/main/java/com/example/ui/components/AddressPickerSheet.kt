@@ -1,8 +1,19 @@
 package com.example.ui.components
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -10,6 +21,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -24,18 +36,22 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
+import androidx.compose.material.icons.filled.Explore
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOff
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Map
 import androidx.compose.material.icons.filled.MyLocation
+import androidx.compose.material.icons.filled.Navigation
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Place
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -55,6 +71,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
@@ -64,7 +83,10 @@ import androidx.compose.ui.unit.sp
 import com.example.model.DeliveryAddress
 import com.example.ui.theme.GroceryGreen
 import com.example.ui.theme.PrimaryOrange
+import com.example.ui.theme.VegGreen
+import com.example.util.CurrentLocationInfo
 import com.example.viewmodel.CustomerDeliveryViewModel
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,15 +98,34 @@ fun AddressPickerSheet(
     val context = LocalContext.current
     val addresses by viewModel.userAddresses.collectAsState()
     val selectedId by viewModel.selectedAddressId.collectAsState()
+    val isLocationLoading by viewModel.isLocationLoading.collectAsState()
+    val locationError by viewModel.locationErrorMessage.collectAsState()
+    val userLat by viewModel.userLatitude.collectAsState()
+    val userLng by viewModel.userLongitude.collectAsState()
+    val locationInfo by viewModel.currentLocationInfo.collectAsState()
     var isAddingNew by remember(addresses.isEmpty()) { mutableStateOf(addresses.isEmpty()) }
 
     var newTitle by remember { mutableStateOf("Home") }
     var newFullAddress by remember { mutableStateOf("") }
     var newLandmark by remember { mutableStateOf("") }
 
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val granted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                      permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        if (granted) {
+            viewModel.fetchCurrentGpsLocation {
+                onDismiss()
+            }
+        } else {
+            viewModel.onLocationPermissionDenied()
+        }
+    }
+
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    fun launchGoogleMaps(query: String) {
+    fun launchGoogleMapsQuery(query: String) {
         try {
             val gmmIntentUri = Uri.parse("geo:0,0?q=" + Uri.encode(query))
             val mapIntent = Intent(Intent.ACTION_VIEW, gmmIntentUri).apply {
@@ -102,6 +143,24 @@ fun AddressPickerSheet(
         }
     }
 
+    fun launchGoogleMapsCoordinates(lat: Double, lng: Double, label: String = "Delivery Location") {
+        try {
+            val geoUri = Uri.parse("geo:$lat,$lng?q=$lat,$lng(${Uri.encode(label)})")
+            val mapIntent = Intent(Intent.ACTION_VIEW, geoUri).apply {
+                setPackage("com.google.android.apps.maps")
+            }
+            if (mapIntent.resolveActivity(context.packageManager) != null) {
+                context.startActivity(mapIntent)
+            } else {
+                val webUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=$lat,$lng")
+                context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+            }
+        } catch (e: Exception) {
+            val webUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=$lat,$lng")
+            context.startActivity(Intent(Intent.ACTION_VIEW, webUri))
+        }
+    }
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -114,66 +173,94 @@ fun AddressPickerSheet(
                 .padding(horizontal = 20.dp, vertical = 12.dp)
                 .verticalScroll(rememberScrollState())
         ) {
+            // Panel Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = if (isAddingNew) "Add Delivery Address" else "Select Delivery Location",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
+                Column {
+                    Text(
+                        text = if (isAddingNew) "Add Delivery Address" else "Delivery Address & Location",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Real-time Google Maps GPS enabled",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
 
                 IconButton(onClick = onDismiss) {
                     Icon(imageVector = Icons.Default.Close, contentDescription = "Close")
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            if (!isAddingNew && addresses.isNotEmpty()) {
-                // Quick Google Maps Action Banner
-                Surface(
-                    color = PrimaryOrange.copy(alpha = 0.08f),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .size(36.dp)
-                                .clip(CircleShape)
-                                .background(PrimaryOrange),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Map,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Google Maps Location Sync",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold
-                            )
-                            Text(
-                                text = "High-precision GPS pin ensures on-time doorstep delivery",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+            // Real-Time Google Maps Live Location Card
+            RealTimeGoogleMapsCard(
+                latitude = userLat,
+                longitude = userLng,
+                locationInfo = locationInfo,
+                isLoading = isLocationLoading,
+                onRefreshGps = {
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                    viewModel.fetchCurrentGpsLocation()
+                },
+                onOpenMaps = {
+                    launchGoogleMapsCoordinates(userLat, userLng, "Delivery Pin")
+                },
+                onUseLocation = {
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                    viewModel.fetchCurrentGpsLocation {
+                        onDismiss()
                     }
                 }
+            )
+
+            if (!locationError.isNullOrBlank()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = locationError ?: "",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            if (!isAddingNew && addresses.isNotEmpty()) {
+                // Section Title: Saved Delivery Addresses
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Saved Delivery Addresses",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "${addresses.size} Available",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // List of Saved Addresses
                 addresses.forEach { addr ->
@@ -184,7 +271,7 @@ fun AddressPickerSheet(
                         border = if (isSelected) androidx.compose.foundation.BorderStroke(1.5.dp, PrimaryOrange) else null,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 6.dp)
+                            .padding(vertical = 5.dp)
                             .clickable {
                                 viewModel.setSelectedAddress(addr.id)
                                 onDismiss()
@@ -192,7 +279,7 @@ fun AddressPickerSheet(
                             .testTag("address_item_${addr.id}")
                     ) {
                         Row(
-                            modifier = Modifier.padding(14.dp),
+                            modifier = Modifier.padding(12.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
@@ -217,15 +304,33 @@ fun AddressPickerSheet(
                             Spacer(modifier = Modifier.width(12.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = addr.title,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(
+                                        text = addr.title,
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    if (addr.id == "addr_gps") {
+                                        Spacer(modifier = Modifier.width(6.dp))
+                                        Surface(
+                                            color = VegGreen.copy(alpha = 0.15f),
+                                            shape = RoundedCornerShape(4.dp)
+                                        ) {
+                                            Text(
+                                                text = "GPS PIN",
+                                                color = VegGreen,
+                                                fontSize = 9.sp,
+                                                fontWeight = FontWeight.Bold,
+                                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                                            )
+                                        }
+                                    }
+                                }
                                 Text(
                                     text = addr.fullAddress,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 2
                                 )
                                 if (addr.landmark.isNotBlank()) {
                                     Text(
@@ -238,12 +343,12 @@ fun AddressPickerSheet(
 
                             // View in Google Maps button
                             IconButton(
-                                onClick = { launchGoogleMaps(addr.fullAddress) },
+                                onClick = { launchGoogleMapsQuery(addr.fullAddress) },
                                 modifier = Modifier.size(32.dp)
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.OpenInNew,
-                                    contentDescription = "View on Maps",
+                                    contentDescription = "View in Google Maps",
                                     tint = PrimaryOrange,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -319,7 +424,7 @@ fun AddressPickerSheet(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "Please enter your address so we know where to deliver your orders.",
+                        text = "Use the live Google Maps GPS pin above or enter your delivery details.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -332,11 +437,41 @@ fun AddressPickerSheet(
                     ) {
                         Icon(imageVector = Icons.Default.Add, contentDescription = null)
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Add Delivery Address")
+                        Text("Enter Address Manually")
                     }
                 }
             } else {
                 // Add New Address Form
+                // Autofill via GPS
+                OutlinedButton(
+                    onClick = {
+                        locationPermissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
+                        viewModel.fetchCurrentGpsLocation {
+                            val loc = viewModel.currentLocationInfo.value
+                            if (loc != null) {
+                                newTitle = loc.title
+                                newFullAddress = loc.fullAddress
+                                newLandmark = "${loc.area}, ${loc.city}"
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("autofill_gps_btn"),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Icon(Icons.Default.MyLocation, contentDescription = null, tint = PrimaryOrange)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Auto-fill from Google Maps Live GPS", color = PrimaryOrange)
+                }
+
+                Spacer(modifier = Modifier.height(10.dp))
+
                 // Quick autofill preset chips from Google Maps
                 Text(
                     text = "Google Maps Quick Locations",
@@ -439,7 +574,7 @@ fun AddressPickerSheet(
                 // Verify Address on Google Maps Button
                 if (newFullAddress.isNotBlank()) {
                     OutlinedButton(
-                        onClick = { launchGoogleMaps(newFullAddress) },
+                        onClick = { launchGoogleMapsQuery(newFullAddress) },
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
@@ -492,3 +627,378 @@ fun AddressPickerSheet(
         }
     }
 }
+
+/**
+ * Visual Real-Time Google Maps Location Card.
+ * Renders an animated live vector map canvas with expanding radar pulse waves,
+ * centered Google Maps pin, real-time latitude/longitude coordinates,
+ * geocoded locality info, and direct Google Maps deep-link actions.
+ */
+@Composable
+fun RealTimeGoogleMapsCard(
+    latitude: Double,
+    longitude: Double,
+    locationInfo: CurrentLocationInfo?,
+    isLoading: Boolean,
+    onRefreshGps: () -> Unit,
+    onOpenMaps: () -> Unit,
+    onUseLocation: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "gps_radar_pulse")
+    val pulseRadius by infiniteTransition.animateFloat(
+        initialValue = 8f,
+        targetValue = 68f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "pulse_radius"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.75f,
+        targetValue = 0.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "pulse_alpha"
+    )
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, PrimaryOrange.copy(alpha = 0.3f)),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp)
+        ) {
+            // Header Bar: Title + GPS Active Indicator + Refresh
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        modifier = Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryOrange),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MyLocation,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = "Real-Time Google Maps GPS",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .clip(CircleShape)
+                                    .background(VegGreen)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isLoading) "Updating GPS location..." else "High-Accuracy Fused Provider",
+                                fontSize = 11.sp,
+                                color = if (isLoading) PrimaryOrange else VegGreen,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+
+                IconButton(
+                    onClick = onRefreshGps,
+                    enabled = !isLoading,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = PrimaryOrange,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh GPS",
+                            tint = PrimaryOrange,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Embedded Interactive-Style Google Maps Canvas
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(Color(0xFFF1F5F9))
+                    .border(1.dp, Color(0xFFE2E8F0), RoundedCornerShape(12.dp))
+            ) {
+                // Vector Map Canvas: Roads, Parks, River, and Concentric Radar Pulses
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val w = size.width
+                    val h = size.height
+                    val cx = w / 2f
+                    val cy = h / 2f
+
+                    // 1. Terrain Base
+                    drawRect(color = Color(0xFFF8FAFC))
+
+                    // 2. Green Park Area (Top-Left)
+                    drawRoundRect(
+                        color = Color(0xFFDCFCE7),
+                        topLeft = Offset(w * 0.05f, h * 0.08f),
+                        size = Size(w * 0.28f, h * 0.42f),
+                        cornerRadius = CornerRadius(10f, 10f)
+                    )
+
+                    // 3. Green Park Area (Bottom-Right)
+                    drawRoundRect(
+                        color = Color(0xFFDCFCE7),
+                        topLeft = Offset(w * 0.70f, h * 0.55f),
+                        size = Size(w * 0.25f, h * 0.38f),
+                        cornerRadius = CornerRadius(10f, 10f)
+                    )
+
+                    // 4. Soft Blue River / Water Canal (Diagonal)
+                    drawLine(
+                        color = Color(0xFFBAE6FD),
+                        start = Offset(0f, h * 0.85f),
+                        end = Offset(w * 0.55f, h),
+                        strokeWidth = 20f
+                    )
+
+                    // 5. Road Network (Horizontal Main Arterial Road)
+                    drawLine(
+                        color = Color(0xFFCBD5E1),
+                        start = Offset(0f, cy),
+                        end = Offset(w, cy),
+                        strokeWidth = 18f
+                    )
+                    drawLine(
+                        color = Color.White,
+                        start = Offset(0f, cy),
+                        end = Offset(w, cy),
+                        strokeWidth = 12f
+                    )
+
+                    // 6. Road Network (Vertical Avenue)
+                    drawLine(
+                        color = Color(0xFFCBD5E1),
+                        start = Offset(cx, 0f),
+                        end = Offset(cx, h),
+                        strokeWidth = 18f
+                    )
+                    drawLine(
+                        color = Color.White,
+                        start = Offset(cx, 0f),
+                        end = Offset(cx, h),
+                        strokeWidth = 12f
+                    )
+
+                    // 7. Secondary Cross Streets
+                    drawLine(
+                        color = Color(0xFFE2E8F0),
+                        start = Offset(w * 0.25f, 0f),
+                        end = Offset(w * 0.25f, h),
+                        strokeWidth = 8f
+                    )
+                    drawLine(
+                        color = Color(0xFFE2E8F0),
+                        start = Offset(w * 0.75f, 0f),
+                        end = Offset(w * 0.75f, h),
+                        strokeWidth = 8f
+                    )
+
+                    // 8. Dynamic Radar Wave Pulses around customer pinpoint
+                    drawCircle(
+                        color = Color(0xFF3B82F6).copy(alpha = pulseAlpha),
+                        radius = pulseRadius,
+                        center = Offset(cx, cy)
+                    )
+                    drawCircle(
+                        color = Color(0xFF3B82F6).copy(alpha = (pulseAlpha * 0.6f)),
+                        radius = pulseRadius * 0.6f,
+                        center = Offset(cx, cy)
+                    )
+                    // High-accuracy boundary ring
+                    drawCircle(
+                        color = Color(0xFF2563EB).copy(alpha = 0.25f),
+                        radius = 28f,
+                        center = Offset(cx, cy)
+                    )
+                    // Pin drop center shadow
+                    drawCircle(
+                        color = Color(0x33000000),
+                        radius = 8f,
+                        center = Offset(cx, cy + 4f)
+                    )
+                }
+
+                // Centered Google Maps Pin Icon
+                Box(
+                    modifier = Modifier.align(Alignment.Center)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocationOn,
+                        contentDescription = "My GPS Pin",
+                        tint = Color(0xFFEA4335), // Google Maps Red
+                        modifier = Modifier.size(34.dp)
+                    )
+                }
+
+                // Floating Google Maps Watermark Badge (Bottom-Left)
+                Surface(
+                    color = Color.White.copy(alpha = 0.92f),
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Map,
+                            contentDescription = null,
+                            tint = Color(0xFF4285F4), // Google Blue
+                            modifier = Modifier.size(12.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Google Maps",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF1E293B)
+                        )
+                    }
+                }
+
+                // Floating Compass Badge (Top-Right)
+                Surface(
+                    color = Color.White.copy(alpha = 0.92f),
+                    shape = CircleShape,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier.size(24.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Explore,
+                            contentDescription = "Compass",
+                            tint = Color(0xFFEA4335),
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
+
+                // Floating Live GPS Coordinates (Bottom-Right)
+                Surface(
+                    color = Color(0xFF0F172A).copy(alpha = 0.82f),
+                    shape = RoundedCornerShape(6.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(8.dp)
+                ) {
+                    Text(
+                        text = String.format(Locale.US, "%.4f° N, %.4f° E", latitude, longitude),
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.White,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Detected Address Information
+            val detectedTitle = locationInfo?.title ?: "Current Location Pin"
+            val detectedAddress = locationInfo?.fullAddress
+                ?: "Indiranagar 12th Main Road, HAL 2nd Stage, Bengaluru, Karnataka 560038"
+
+            Text(
+                text = detectedTitle,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = detectedAddress,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Action Buttons: "Deliver Here" & "Open in Google Maps"
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = onOpenMaps,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.OpenInNew,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = PrimaryOrange
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "View on Maps",
+                        fontSize = 12.sp,
+                        color = PrimaryOrange
+                    )
+                }
+
+                Button(
+                    onClick = onUseLocation,
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
+                    modifier = Modifier.weight(1.2f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = "Deliver to Pin",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+    }
+}
+

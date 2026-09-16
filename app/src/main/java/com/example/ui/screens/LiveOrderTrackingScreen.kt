@@ -123,6 +123,8 @@ fun LiveOrderTrackingScreen(
         OrderStatus.PLACED -> 1
         OrderStatus.CONFIRMED -> 2
         OrderStatus.PREPARING -> 3
+        OrderStatus.READY_FOR_PICKUP -> 3
+        OrderStatus.OUT_FOR_PICKUP -> 4
         OrderStatus.OUT_FOR_DELIVERY -> 4
         OrderStatus.DELIVERED -> 5
         OrderStatus.CANCELLED -> 0
@@ -237,6 +239,8 @@ fun LiveOrderTrackingScreen(
                                         OrderStatus.PLACED -> "Order Sent to Store"
                                         OrderStatus.CONFIRMED -> "Store Confirmed Order"
                                         OrderStatus.PREPARING -> "Kitchen Preparing Order"
+                                        OrderStatus.READY_FOR_PICKUP -> "Packed & Ready for Pickup"
+                                        OrderStatus.OUT_FOR_PICKUP -> "Rider En Route to Store"
                                         OrderStatus.OUT_FOR_DELIVERY -> "Rider Out For Delivery"
                                         OrderStatus.DELIVERED -> "Order Delivered"
                                         OrderStatus.CANCELLED -> "Order Cancelled"

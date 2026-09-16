@@ -44,7 +44,6 @@ import androidx.compose.ui.unit.dp
 import com.example.model.OrderStatus
 import com.example.ui.components.ActiveOrderFloatingPill
 import com.example.ui.components.AddressPickerSheet
-import com.example.ui.components.NetworkEcosystemSheet
 import com.example.ui.components.TopLocationHeader
 import com.example.ui.components.UserProfileSheet
 import com.example.ui.screens.AuthScreen
@@ -84,7 +83,6 @@ fun CustomerApp(
     val cloudStatus by viewModel.cloudStatus.collectAsState()
 
     var showAddressSheet by remember { mutableStateOf(false) }
-    var showNetworkSheet by remember { mutableStateOf(false) }
     var showProfileSheet by remember { mutableStateOf(false) }
 
     // Handle system back navigation gracefully
@@ -109,8 +107,7 @@ fun CustomerApp(
                     selectedAddress = currentAddress,
                     userName = activeUser?.name ?: "Customer",
                     onAddressClick = { showAddressSheet = true },
-                    onProfileClick = { showProfileSheet = true },
-                    onNetworkClick = { showNetworkSheet = true }
+                    onProfileClick = { showProfileSheet = true }
                 )
             }
         },
@@ -270,14 +267,6 @@ fun CustomerApp(
         AddressPickerSheet(
             viewModel = viewModel,
             onDismiss = { showAddressSheet = false }
-        )
-    }
-
-    if (showNetworkSheet) {
-        NetworkEcosystemSheet(
-            onDismiss = { showNetworkSheet = false },
-            isCloudConnected = isCloudConnected,
-            cloudStatus = cloudStatus
         )
     }
 
